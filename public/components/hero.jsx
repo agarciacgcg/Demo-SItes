@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'; // Added useRef just in case, though not used in this specific change
-import { Utensils, MoveRight, Leaf, Fish, Beef, ChefHat } from 'lucide-react';
-import { motion, useScroll, useTransform } from 'framer-motion'; // useScroll, useTransform not used in ElegantHeroSection
+import { Utensils, MoveRight, Leaf, Fish, Beef, ChefHat, X, Menu as MenuIcon } from 'lucide-react';
+import { motion,AnimatePresence, useScroll, useTransform } from 'framer-motion'; // useScroll, useTransform not used in ElegantHeroSection
 
 // --- Placeholder for sponsor logos (Using your latest version) ---
 const SponsorLogo = ({ name }) => (
@@ -9,46 +9,30 @@ const SponsorLogo = ({ name }) => (
   </div>
 );
 
-// --- MODIFIED ElegantHeroSection ---
 const ElegantHeroSection = () => {
   const desktopHeroImageUrl = '/Untitled-2-conecpt_hero2.png';
-  const mobileHeroImageUrl = '/place_vertical.png'; // Your mobile-specific image
+  const mobileHeroImageUrl = '/place_vertical.png';
 
-  // State to hold the URL of the hero image to be displayed
-  const [heroImageUrl, setHeroImageUrl] = useState(desktopHeroImageUrl); // Default to desktop
+  const [heroImageUrl, setHeroImageUrl] = useState(desktopHeroImageUrl);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // State for mobile menu
 
   // Effect to determine and set the correct image URL based on screen width
   useEffect(() => {
-    // Media query to detect mobile screens (Tailwind's `md` breakpoint is typically 768px)
-    // We target screens *smaller* than md (e.g., max-width: 767px)
     const mediaQuery = window.matchMedia('(max-width: 767px)');
-
     const handleResize = (event) => {
-      if (event.matches) { // If media query matches (is mobile screen)
-        setHeroImageUrl(mobileHeroImageUrl);
-      } else { // Is desktop screen
-        setHeroImageUrl(desktopHeroImageUrl);
-      }
+      setHeroImageUrl(event.matches ? mobileHeroImageUrl : desktopHeroImageUrl);
     };
-
-    // Call handler initially to set the image based on the current screen size
     handleResize(mediaQuery);
-
-    // Add listener for screen size changes
-    // Modern browsers use addEventListener/removeEventListener
     try {
         mediaQuery.addEventListener('change', handleResize);
     } catch (e1) {
-        // Fallback for older browsers (less common now)
         try {
             mediaQuery.addListener(handleResize);
         } catch (e2) {
             console.error("Error adding media query listener for hero image responsiveness:", e2);
         }
     }
-
-    // Cleanup function to remove the listener when the component unmounts
     return () => {
       try {
           mediaQuery.removeEventListener('change', handleResize);
@@ -60,45 +44,71 @@ const ElegantHeroSection = () => {
           }
       }
     };
-  }, [desktopHeroImageUrl, mobileHeroImageUrl]); // Dependencies
+  }, [desktopHeroImageUrl, mobileHeroImageUrl]);
 
   // Effect to preload the current hero image and manage the loaded state
   useEffect(() => {
-    setIsLoaded(false); // Reset loaded state when image URL changes
-    let isActive = true; // Flag to prevent state updates on unmounted component
-
+    setIsLoaded(false);
+    let isActive = true;
     const img = new Image();
     img.src = heroImageUrl;
-
     img.onload = () => {
-      if (isActive) {
-        setIsLoaded(true);
-      }
+      if (isActive) setIsLoaded(true);
     };
     img.onerror = () => {
       if (isActive) {
         console.error(`Failed to load hero image: ${heroImageUrl}`);
-        setIsLoaded(true); // Still set to true to unblock UI, or handle error display
-      }
-    };
-
-    // Fallback timer in case onload/onerror doesn't fire quickly (e.g., for very fast cache or network issues)
-    const timer = setTimeout(() => {
-      if (isActive && !isLoaded) {
         setIsLoaded(true);
       }
-    }, 1500); // Adjust timer as needed, e.g., 1.5 seconds
-
+    };
+    const timer = setTimeout(() => {
+      if (isActive && !isLoaded) setIsLoaded(true);
+    }, 1500);
     return () => {
-      isActive = false; // Prevent state update on unmount
+      isActive = false;
       clearTimeout(timer);
     };
-  }, [heroImageUrl]); // This effect re-runs whenever heroImageUrl changes
+  }, [heroImageUrl]);
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const mobileMenuVariants = {
+    hidden: {
+      opacity: 0,
+      y: -25,
+      height: 0,
+      transition: {
+        duration: 0.3,
+        ease: [0.4, 0, 0.2, 1], // Elegant ease-out
+        staggerChildren: 0.05,
+        staggerDirection: -1,
+      },
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      height: 'auto',
+      transition: {
+        duration: 0.4,
+        ease: [0.4, 0, 0.2, 1], // Elegant ease-in
+        staggerChildren: 0.07,
+        delayChildren: 0.1,
+      },
+    },
+  };
+
+  const menuItemVariants = {
+    hidden: { opacity: 0, y: -10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
+  };
+
 
   return (
     <div
       className="relative flex flex-col min-h-screen bg-cover bg-center text-orange-50 font-serif selection:bg-amber-500 selection:text-white"
-      style={{ backgroundImage: `url(${heroImageUrl})` }} // Use the dynamic heroImageUrl
+      style={{ backgroundImage: `url(${heroImageUrl})` }}
     >
       <div className="absolute inset-0 bg-gradient-to-b from-stone-900/60 via-transparent to-gray-100/10"></div>
       <div className="relative z-10 flex flex-col flex-grow container mx-auto px-4 sm:px-6 lg:px-8">
@@ -108,6 +118,7 @@ const ElegantHeroSection = () => {
               <Utensils size={28} className="text-amber-400" />
               <span className="tracking-tight">Épice</span>
             </a>
+            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8 lg:space-x-10">
               {['Our Story', 'Menu', 'Reservations'].map((item) => (
                 <a
@@ -119,10 +130,43 @@ const ElegantHeroSection = () => {
                 </a>
               ))}
             </div>
-            <div className="md:hidden">
-              <button className="text-stone-300 hover:text-amber-400 p-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            {/* Mobile Menu Button and Dropdown */}
+            <div className="md:hidden relative">
+              <button
+                onClick={toggleMobileMenu}
+                className="text-stone-300 hover:text-amber-400 p-2 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-opacity-50 rounded-md"
+                aria-expanded={isMobileMenuOpen}
+                aria-controls="mobile-menu-dropdown"
+                aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              >
+                {isMobileMenuOpen ? <X size={26} /> : <MenuIcon size={26} />}
               </button>
+              <AnimatePresence>
+                {isMobileMenuOpen && (
+                  <motion.div
+                    id="mobile-menu-dropdown"
+                    variants={mobileMenuVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="hidden"
+                    className="absolute right-0 mt-3 w-64 origin-top-right bg-stone-800/95 backdrop-blur-md rounded-lg shadow-2xl overflow-hidden z-50"
+                  >
+                    <ul className="flex flex-col py-2">
+                      {['Our Story', 'Menu', 'Reservations'].map((item) => (
+                        <motion.li key={item} variants={menuItemVariants}>
+                          <a
+                            href={`#${item.toLowerCase().replace(/\s+/g, '-')}`}
+                            className="block px-6 py-3.5 text-orange-50 hover:bg-amber-600/20 transition-colors duration-200 ease-in-out text-sm tracking-wider"
+                            onClick={() => setIsMobileMenuOpen(false)} // Close menu on link click
+                          >
+                            {item}
+                          </a>
+                        </motion.li>
+                      ))}
+                    </ul>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </nav>
@@ -130,7 +174,7 @@ const ElegantHeroSection = () => {
           <div className="w-full md:w-3/5 lg:w-1/2 xl:w-2/5">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
-              animate={isLoaded ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }} // Ensure it animates correctly based on isLoaded
+              animate={isLoaded ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
               transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
               className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight sm:leading-snug mb-6 text-white"
             >
@@ -138,7 +182,7 @@ const ElegantHeroSection = () => {
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
-              animate={isLoaded ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }} // Ensure it animates correctly
+              animate={isLoaded ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
               transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
               className="text-lg sm:text-xl text-white mb-10 max-w-md leading-relaxed "
             >
@@ -146,11 +190,11 @@ const ElegantHeroSection = () => {
             </motion.p>
             <motion.button
               initial={{ opacity: 0, scale: 0.9 }}
-              animate={isLoaded ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }} // Ensure it animates correctly
+              animate={isLoaded ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.5, delay: 0.7, ease: "easeOut" }}
-              whileHover={{ scale: 1.05, backgroundColor: 'rgba(245, 158, 11, 1)' }}
+              whileHover={{ scale: 1.05, backgroundColor: 'rgba(245, 158, 11, 1)' }} // amber-500
               whileTap={{ scale: 0.98 }}
-              className="bg-amber-400 text-white font-semibold py-3.5 px-10 rounded-lg text-base inline-flex items-center space-x-2.5 shadow-lg hover:shadow-xl transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-opacity-50 tracking-wide"
+              className="bg-transparent backdrop-blur-xs text-black/50 text-shadow-2xs font-semibold py-3.5 px-10 rounded-4xl text-base inline-flex items-center space-x-2.5 shadow-sm hover:shadow-xl transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-opacity-50 tracking-wide"
             >
               <span>Explore Our World</span>
               <MoveRight size={20} />
