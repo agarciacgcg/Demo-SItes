@@ -4,7 +4,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 
 // --- Placeholder for sponsor logos (Unchanged from your version) ---
 const SponsorLogo = ({ name }) => (
-  <div className="text-stone-500 hover:text-amber-600 transition-colors duration-300 text-xs sm:text-sm font-medium">
+  <div className="text-white hover:text-amber-600 transition-colors duration-300 text-xs sm:text-sm font-medium">
     {name}
   </div>
 );
