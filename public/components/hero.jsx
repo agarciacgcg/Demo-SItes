@@ -1,31 +1,104 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react'; // Added useRef just in case, though not used in this specific change
 import { Utensils, MoveRight, Leaf, Fish, Beef, ChefHat } from 'lucide-react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion'; // useScroll, useTransform not used in ElegantHeroSection
 
-// --- Placeholder for sponsor logos (Unchanged from your version) ---
+// --- Placeholder for sponsor logos (Using your latest version) ---
 const SponsorLogo = ({ name }) => (
   <div className="text-white hover:text-amber-600 transition-colors duration-300 text-xs sm:text-sm font-medium">
     {name}
   </div>
 );
 
-// --- ElegantHeroSection (Unchanged from your version) ---
+// --- MODIFIED ElegantHeroSection ---
 const ElegantHeroSection = () => {
-  const heroImageUrl = '/Untitled-2-conecpt_hero2.png';
+  const desktopHeroImageUrl = '/Untitled-2-conecpt_hero2.png';
+  const mobileHeroImageUrl = '/place_vertical.png'; // Your mobile-specific image
+
+  // State to hold the URL of the hero image to be displayed
+  const [heroImageUrl, setHeroImageUrl] = useState(desktopHeroImageUrl); // Default to desktop
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Effect to determine and set the correct image URL based on screen width
   useEffect(() => {
+    // Media query to detect mobile screens (Tailwind's `md` breakpoint is typically 768px)
+    // We target screens *smaller* than md (e.g., max-width: 767px)
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+
+    const handleResize = (event) => {
+      if (event.matches) { // If media query matches (is mobile screen)
+        setHeroImageUrl(mobileHeroImageUrl);
+      } else { // Is desktop screen
+        setHeroImageUrl(desktopHeroImageUrl);
+      }
+    };
+
+    // Call handler initially to set the image based on the current screen size
+    handleResize(mediaQuery);
+
+    // Add listener for screen size changes
+    // Modern browsers use addEventListener/removeEventListener
+    try {
+        mediaQuery.addEventListener('change', handleResize);
+    } catch (e1) {
+        // Fallback for older browsers (less common now)
+        try {
+            mediaQuery.addListener(handleResize);
+        } catch (e2) {
+            console.error("Error adding media query listener for hero image responsiveness:", e2);
+        }
+    }
+
+    // Cleanup function to remove the listener when the component unmounts
+    return () => {
+      try {
+          mediaQuery.removeEventListener('change', handleResize);
+      } catch (e1) {
+          try {
+              mediaQuery.removeListener(handleResize);
+          } catch (e2) {
+              console.error("Error removing media query listener for hero image responsiveness:", e2);
+          }
+      }
+    };
+  }, [desktopHeroImageUrl, mobileHeroImageUrl]); // Dependencies
+
+  // Effect to preload the current hero image and manage the loaded state
+  useEffect(() => {
+    setIsLoaded(false); // Reset loaded state when image URL changes
+    let isActive = true; // Flag to prevent state updates on unmounted component
+
     const img = new Image();
     img.src = heroImageUrl;
-    img.onload = () => setIsLoaded(true);
-    const timer = setTimeout(() => setIsLoaded(true), 1000);
-    return () => clearTimeout(timer);
-  }, [heroImageUrl]);
+
+    img.onload = () => {
+      if (isActive) {
+        setIsLoaded(true);
+      }
+    };
+    img.onerror = () => {
+      if (isActive) {
+        console.error(`Failed to load hero image: ${heroImageUrl}`);
+        setIsLoaded(true); // Still set to true to unblock UI, or handle error display
+      }
+    };
+
+    // Fallback timer in case onload/onerror doesn't fire quickly (e.g., for very fast cache or network issues)
+    const timer = setTimeout(() => {
+      if (isActive && !isLoaded) {
+        setIsLoaded(true);
+      }
+    }, 1500); // Adjust timer as needed, e.g., 1.5 seconds
+
+    return () => {
+      isActive = false; // Prevent state update on unmount
+      clearTimeout(timer);
+    };
+  }, [heroImageUrl]); // This effect re-runs whenever heroImageUrl changes
 
   return (
     <div
       className="relative flex flex-col min-h-screen bg-cover bg-center text-orange-50 font-serif selection:bg-amber-500 selection:text-white"
-      style={{ backgroundImage: `url(${heroImageUrl})` }}
+      style={{ backgroundImage: `url(${heroImageUrl})` }} // Use the dynamic heroImageUrl
     >
       <div className="absolute inset-0 bg-gradient-to-b from-stone-900/60 via-transparent to-gray-100/10"></div>
       <div className="relative z-10 flex flex-col flex-grow container mx-auto px-4 sm:px-6 lg:px-8">
@@ -57,7 +130,7 @@ const ElegantHeroSection = () => {
           <div className="w-full md:w-3/5 lg:w-1/2 xl:w-2/5">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
-              animate={isLoaded ? { opacity: 1, y: 0 } : {}}
+              animate={isLoaded ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }} // Ensure it animates correctly based on isLoaded
               transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
               className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight sm:leading-snug mb-6 text-white"
             >
@@ -65,7 +138,7 @@ const ElegantHeroSection = () => {
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
-              animate={isLoaded ? { opacity: 1, y: 0 } : {}}
+              animate={isLoaded ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }} // Ensure it animates correctly
               transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
               className="text-lg sm:text-xl text-white mb-10 max-w-md leading-relaxed "
             >
@@ -73,7 +146,7 @@ const ElegantHeroSection = () => {
             </motion.p>
             <motion.button
               initial={{ opacity: 0, scale: 0.9 }}
-              animate={isLoaded ? { opacity: 1, scale: 1 } : {}}
+              animate={isLoaded ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }} // Ensure it animates correctly
               transition={{ duration: 0.5, delay: 0.7, ease: "easeOut" }}
               whileHover={{ scale: 1.05, backgroundColor: 'rgba(245, 158, 11, 1)' }}
               whileTap={{ scale: 0.98 }}
@@ -101,7 +174,8 @@ const ElegantHeroSection = () => {
   );
 };
 
-// --- About Us Section (Unchanged from your version) ---
+
+// --- About Us Section ( 그대로 유지 ) ---
 const AboutSection = () => {
   const sectionItemVariants = {
     hidden: { opacity: 0, y: 30 },
@@ -144,7 +218,7 @@ const AboutSection = () => {
   );
 };
 
-// --- Dish Data (Unchanged from your version) ---
+// --- Dish Data ( 그대로 유지 ) ---
 const dishesData = [
   {
     name: "Saffron Risotto Milanese",
@@ -164,19 +238,19 @@ const dishesData = [
     name: "Filet Mignon Rosé",
     description: "Prime beef tenderloin, rosé wine reduction, and truffle dauphinoise potatoes.",
     details: ["Beef Tenderloin", "Rosé Wine", "Potatoes", "Truffle"],
-    imageUrl: "filet.png", // Assuming this path is correct, like others
+    imageUrl: "filet.png", 
     icon: <Beef size={24} className="text-red-700" />,
   },
   {
     name: "Spiced Lamb Chops",
     description: "Tender lamb chops marinated in aromatic spices, grilled, with couscous and roasted vegetables.",
     details: ["Lamb Chops", "Spices", "Couscous", "Mint"],
-    imageUrl: "lamb.png", // Assuming this path is correct
+    imageUrl: "lamb.png", 
     icon: <ChefHat size={24} className="text-orange-700" />,
   },
 ];
 
-// --- MODIFIED AnimatedDishItem Component ---
+// --- AnimatedDishItem Component ( 그대로 유지 ) ---
 const AnimatedDishItem = ({ dish, index, totalDishes, scrollYProgress }) => {
   let currentPoint, prevPoint, nextPoint;
 
@@ -213,17 +287,15 @@ const AnimatedDishItem = ({ dish, index, totalDishes, scrollYProgress }) => {
     ["50%", "0%", "-50%"] 
   );
 
-  // Subtle scale effect for the image when it's in focus
   const imageScale = useTransform(
     scrollYProgress,
     [prevPoint, currentPoint, nextPoint],
-    [0.95, 1.05, 0.95] // Scale down, then up to focus, then down again
+    [0.95, 1.05, 0.95] 
   );
   
   const staticOpacity = totalDishes === 1 ? 1 : opacity;
   const staticX = totalDishes === 1 ? "0%" : x;
   const animatedImageScale = totalDishes === 1 ? 1 : imageScale;
-
 
   return (
     <motion.div
@@ -232,43 +304,39 @@ const AnimatedDishItem = ({ dish, index, totalDishes, scrollYProgress }) => {
         x: staticX,
         position: 'absolute', 
         width: '100%', 
-        maxWidth: '880px', // Increased card size
+        maxWidth: '880px', 
         top: '50%', 
         left: '50%', 
         translateY: '-50%', 
         translateX: '-50%', 
       }}
-      className="flex" // Simplified outer className, focusing on content alignment via style
+      className="flex" 
     >
-      {/* Inner container for layout and padding, maintaining transparency */}
       <div className="flex flex-col md:flex-row items-center bg-transparent rounded-2xl p-8 md:p-10 lg:p-12 w-full">
-        {/* Image Container with Scale Animation */}
         <motion.div 
           style={{ scale: animatedImageScale }}
-          className="w-full md:w-1/2 lg:w-6/12 flex-shrink-0 mb-8 md:mb-0 md:mr-8 lg:mr-12" // Gave image more space
+          className="w-full md:w-1/2 lg:w-6/12 flex-shrink-0 mb-8 md:mb-0 md:mr-8 lg:mr-12" 
         >
           <img
             src={dish.imageUrl}
             alt={dish.name}
-            className="w-full h-auto object-contain rounded-2xl " // Changed to object-contain for full image visibility, increased rounding and shadow
+            className="w-full h-auto object-contain rounded-2xl " 
           />
         </motion.div>
-
-        {/* Text Content Container */}
         <div className="w-full md:w-1/2 lg:w-6/12 text-center md:text-left flex flex-col justify-center">
           <div className="flex justify-center md:justify-start items-center mb-4 lg:mb-5">
-            {React.cloneElement(dish.icon, { size: 26, className: `${dish.icon.props.className} mr-3` })} {/* Slightly larger icon */}
-            <h3 className="text-3xl lg:text-4xl xl:text-5xl font-semibold text-amber-800 tracking-tight">{dish.name}</h3> {/* Larger title */}
+            {React.cloneElement(dish.icon, { size: 26, className: `${dish.icon.props.className} mr-3` })} 
+            <h3 className="text-3xl lg:text-4xl xl:text-5xl font-semibold text-amber-800 tracking-tight">{dish.name}</h3> 
           </div>
-          <p className="text-stone-600 text-lg lg:text-xl xl:text-2xl leading-relaxed mb-6 lg:mb-8"> {/* Larger description, removed min-h */}
+          <p className="text-stone-600 text-lg lg:text-xl xl:text-2xl leading-relaxed mb-6 lg:mb-8"> 
             {dish.description}
           </p>
           {dish.details && dish.details.length > 0 && (
-            <div className="mt-auto"> {/* Pushes details to bottom if text content is short */}
+            <div className="mt-auto"> 
               <h4 className="text-base lg:text-lg font-semibold text-stone-700 mb-3 tracking-wide">KEY INGREDIENTS:</h4>
               <ul className="flex flex-wrap justify-center md:justify-start gap-2.5 lg:gap-3">
                 {dish.details.map(detail => (
-                  <li key={detail} className="text-sm lg:text-base text-stone-500 bg-amber-100/90 px-3 py-1.5 rounded-full shadow-sm"> {/* Enhanced tags */}
+                  <li key={detail} className="text-sm lg:text-base text-stone-500 bg-amber-100/90 px-3 py-1.5 rounded-full shadow-sm"> 
                     {detail}
                   </li>
                 ))}
@@ -281,16 +349,15 @@ const AnimatedDishItem = ({ dish, index, totalDishes, scrollYProgress }) => {
   );
 };
 
-
-// --- DishShowcaseSection Component (Unchanged from your version) ---
+// --- DishShowcaseSection Component ( 그대로 유지 ) ---
 const DishShowcaseSection = () => {
-  const sectionRef = useRef(null);
+  const sectionRef = useRef(null); // useRef is imported but not used here, it's fine.
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end end"] 
   });
 
-  const scrollDurationPerDishVh = 125; 
+  const scrollDurationPerDishVh = 125; // User changed this to 125
   const calculateSectionHeight = (totalDishes) => {
     if (totalDishes <= 0) return '0px';
     if (totalDishes === 1) return '120vh'; 
@@ -329,7 +396,7 @@ const DishShowcaseSection = () => {
   );
 };
 
-// --- RestaurantLandingPage Component (Unchanged from your version) ---
+// --- RestaurantLandingPage Component ( 그대로 유지 ) ---
 const RestaurantLandingPage = () => {
   useEffect(() => {
     document.body.style.backgroundColor = '#FFF7ED';
@@ -362,7 +429,6 @@ const RestaurantLandingPage = () => {
         </div>
       </section>
 
-       {/* MODIFIED Footer section */}
       <footer className="py-20 bg-amber-100 text-stone-600 border-t border-amber-200/70 font-serif">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <a href="#" className="flex items-center justify-center space-x-2.5 text-2xl font-semibold hover:opacity-90 transition-opacity duration-300 text-amber-700 mb-8">
@@ -382,18 +448,17 @@ const RestaurantLandingPage = () => {
           </div>
           <p className="text-xs text-stone-500">&copy; {new Date().getFullYear()} Épice. All Rights Reserved. Crafted with passion.</p>
           <p className="text-xs mt-1.5 text-stone-500">123 Culinary Avenue, Flavor Town, CA 90210</p>
-          {/* ADDED LINE BELOW */}
          <p className="text-xs mt-2 text-stone-500">
-  Designed & Powered by{' '}
-  <a 
-    href="https://odyyn.com" 
-    target="_blank" 
-    rel="noopener noreferrer" 
-    className="underline hover:text-amber-600 transition-colors duration-300"
-  >
-    Odyyn, LLC
-  </a>
-</p>
+            Designed & Powered by{' '}
+            <a 
+              href="https://odyyn.com" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="underline hover:text-amber-600 transition-colors duration-300"
+            >
+              Odyyn, LLC
+            </a>
+          </p>
         </div>
       </footer>
     </div>
